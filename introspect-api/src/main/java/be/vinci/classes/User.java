@@ -16,6 +16,10 @@ public class User {
         this.lastName = lastName;
     }
 
+    public static void test(){
+
+    }
+
     public int getId() {
         return id;
     }

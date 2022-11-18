@@ -32,6 +32,7 @@ public class ClassAnalyzer {
         JsonObjectBuilder objectBuilder = Json.createObjectBuilder();
         objectBuilder.add("name", aClass.getCanonicalName());
         objectBuilder.add("fields", getFields());
+        objectBuilder.add("methods", getMethods());
         return objectBuilder.build();
     }
 
@@ -95,7 +96,7 @@ public class ClassAnalyzer {
     public JsonArray getMethods() {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 
-        for (Method m : aClass.getMethods()) {
+        for (Method m : aClass.getDeclaredMethods()) {
             arrayBuilder.add(getMethod(m));
         }
         return arrayBuilder.build();
@@ -105,17 +106,32 @@ public class ClassAnalyzer {
         JsonObjectBuilder objectBuilder = Json.createObjectBuilder();
         objectBuilder.add("name", m.getName());
         objectBuilder.add("returnType", m.getReturnType().getName());
-        JsonArray param = Json.createArrayBuilder().build();
-        if (m.getParameterTypes().length > 0) {
-            for (Object o : m.getParameterTypes()) {
-               // param.add(o.toString());
-            }
+
+        JsonArrayBuilder param = Json.createArrayBuilder();
+        Parameter[] parameters = m.getParameters();
+
+        for (Parameter parameter : parameters) {
+            param.add(parameter.getName());
         }
-//        objectBuilder.add("parameters", param);
-//        objectBuilder.add("visibility", );
-//        objectBuilder.add("isStatic", );
-//        objectBuilder.add("isAbstract", );
+
+        objectBuilder.add("parameters", param);
+        objectBuilder.add("visibility", getMethodVisibility(m));
+        objectBuilder.add("isStatic", isMethodStatic(m));
+        objectBuilder.add("isAbstract", isMethodAbstract(m));
 
         return objectBuilder.build();
     }
+
+    private String getMethodVisibility(Method m) {
+        return Modifier.toString(m.getModifiers()); // TODO
+    }
+
+    private boolean isMethodStatic(Method m) {
+        return Modifier.isStatic(m.getModifiers()); // TODO
+    }
+
+    private boolean isMethodAbstract(Method m) {
+        return Modifier.isAbstract(m.getModifiers()); // TODO
+    }
+
 }
