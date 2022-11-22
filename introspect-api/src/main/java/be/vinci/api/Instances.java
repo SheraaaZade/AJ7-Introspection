@@ -4,13 +4,15 @@ import be.vinci.classes.User;
 import be.vinci.instances.InstanceGraph1;
 import be.vinci.services.ClassAnalyzer;
 import be.vinci.services.InstancesAnalyzer;
+import be.vinci.utils.InstanceGraphBuilder;
 import jakarta.json.JsonStructure;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import jdk.javadoc.internal.doclets.toolkit.builders.ConstructorBuilder;
+//import jdk.javadoc.internal.doclets.toolkit.builders.ConstructorBuilder;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * Send instances graph data to make object diagrams
@@ -26,33 +28,20 @@ public class Instances {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public JsonStructure getInstanceGraphInfo(@QueryParam("builderclassname") String builderClassname) {
-        // chercher la classe
-        // chercher le constructeur
-        // invoquer le constructeur pour avoir l'objet
-        Class classe;
         try {
-            classe = Class.forName(builderClassname);
-        } catch (ClassNotFoundException e) {
-            throw new WebApplicationException(404);
+           Class builderClass = Class.forName("be.vinci.instances"+builderClassname);
+           Object builderObject = builderClass.getConstructor().newInstance();
+            for (Method m : builderClass.getDeclaredMethods()) {
+                if(m.isAnnotationPresent(InstanceGraphBuilder.class)){
+                    Object instanceGraph = m.invoke(builderObject);
+                    InstancesAnalyzer analyze = new InstancesAnalyzer(instanceGraph);
+                    return analyze.getFullInfo();
+                }
+            }
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException ignore) {
+            throw new InternalError();
         }
-        Constructor constructeur = classe.getDeclaredConstructors()[0];
-        Object objet;
-        try {
-            objet = constructeur.newInstance();
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-
-        // TODO change this line to use the query parameter, and generate dynamically the builder
-        // TODO change this line to avoid calling initInstanceGraph() directly
-
-        InstanceGraph1 builder = new InstanceGraph1();
-        Object instanceGraph = builder.initInstanceGraph();
-        InstancesAnalyzer analyzer = new InstancesAnalyzer(instanceGraph);
-        return analyzer.getFullInfo();
+        throw new WebApplicationException(404);
     }
+
 }
